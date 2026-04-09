@@ -1,0 +1,9 @@
+source_id,first_name,last_name,email,phone,address,source_system,created_at
+1,John,Doe,john.doe@email.com,+1234567890,123 Main St,CRM,2025-01-01
+2,Jon,Doe,john.doe@email.com,+1234567890,123 Main Street,ERP,2025-01-02
+3,Jane,Smith,jane.smith@company.com,+1987654321,456 Oak Ave,CRM,2025-01-03
+4,Janie,Smyth,jane.smith@company.com,+1987654321,456 Oak Avenue,Marketing,2025-01-04
+5,Alice,Johnson,alice.j@email.com,+1122334455,789 Pine Rd,CRM,2025-01-05
+6,Bob,Brown,bob.brown@test.com,+1555666777,101 Elm St,ERP,2025-01-06
+7,Robert,Brown,bob.brown@test.com,+1555666777,101 Elm Street,Salesforce,2025-01-07
+8,Carol,Wilson,carol.w@demo.com,+1999888777,202 Birch Ln,CRM,2025-01-08
