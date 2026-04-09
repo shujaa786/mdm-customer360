@@ -14,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api', require('./routes/ingest'));
 app.use('/api', require('./routes/match'));
+app.use('/api/entities', require('./routes/entities'));
 connectDB();
 
 // Routes will be added later
