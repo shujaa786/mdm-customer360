@@ -5,3 +5,5 @@ dist/
 logs/
 build/
 coverage/
+.elasticbeanstalk/
+cf-config.json
