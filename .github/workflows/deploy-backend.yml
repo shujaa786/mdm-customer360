@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'backend/**'     # Only trigger when files in backend/ change
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,6 +13,11 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-south-1
+      EB_APPLICATION_NAME: mdm-customer360-backend
+      EB_ENVIRONMENT_NAME: mdm-customer360-prod
 
     steps:
       - name: Checkout code
@@ -28,12 +34,26 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload bundle and create application version
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          S3_BUCKET="elasticbeanstalk-${AWS_REGION}-${ACCOUNT_ID}"
+          VERSION_LABEL="${GITHUB_SHA::7}-$(date +%Y%m%d%H%M%S)"
+          S3_KEY="${EB_APPLICATION_NAME}/${VERSION_LABEL}.zip"
+
+          aws s3 cp deploy-package.zip "s3://${S3_BUCKET}/${S3_KEY}"
+
+          aws elasticbeanstalk create-application-version \
+            --application-name "${EB_APPLICATION_NAME}" \
+            --version-label "${VERSION_LABEL}" \
+            --source-bundle S3Bucket="${S3_BUCKET}",S3Key="${S3_KEY}"
+
+          echo "VERSION_LABEL=${VERSION_LABEL}" >> $GITHUB_ENV
 
       - name: Deploy to Elastic Beanstalk
-        uses: aws-actions/aws-elasticbeanstalk-deploy@v1
-        with:
-          application-name: mdm-customer360-backend
-          environment-name: mdm-customer360-prod
-          deployment-package: deploy-package.zip
-          aws-region: us-east-1
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name "${EB_ENVIRONMENT_NAME}" \
+            --version-label "${VERSION_LABEL}"
