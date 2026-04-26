@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import Navbar from '../components/Navbar';
 import DataTable from '../components/DataTable';
+import { getApiBaseUrl } from '../lib/env';
+
+const apiBaseUrl = getApiBaseUrl();
 
 export default function Home() {
   const [entities, setEntities] = useState([]);
@@ -10,7 +12,7 @@ export default function Home() {
 
   const fetchEntities = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/entities');
+      const res = await axios.get(`${apiBaseUrl || 'http://localhost:5000'}/api/entities`);
       setEntities(res.data.entities || []);
     } catch (err) {
       console.error(err);
@@ -25,7 +27,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8">
           <div>
