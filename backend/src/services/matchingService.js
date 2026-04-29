@@ -22,6 +22,10 @@ function normalize(str) {
   return (str || '').toLowerCase().trim();
 }
 
+function hasValue(str) {
+  return normalize(str).length > 0;
+}
+
 // Main MDM matching function
 async function findPotentialMatches(Entity) {
   const allEntities = await Entity.find({ isGolden: false });
@@ -35,8 +39,8 @@ async function findPotentialMatches(Entity) {
       let score = 0;
 
       // Exact email or phone = very high score
-      if (normalize(a.email) === normalize(b.email)) score += 50;
-      if (normalize(a.phone) === normalize(b.phone)) score += 40;
+      if (hasValue(a.email) && hasValue(b.email) && normalize(a.email) === normalize(b.email)) score += 50;
+      if (hasValue(a.phone) && hasValue(b.phone) && normalize(a.phone) === normalize(b.phone)) score += 40;
 
       // Fuzzy name matching
       const fullNameA = normalize(a.firstName + ' ' + a.lastName);

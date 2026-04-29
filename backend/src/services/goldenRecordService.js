@@ -25,6 +25,7 @@ async function createGoldenRecords() {
       address: entity1.address || entity2.address,
       sourceSystem: 'GOLDEN_RECORD',
       rawData: { mergedFrom: [entity1._id, entity2._id] },
+      mergedFrom: [entity1._id, entity2._id],
       isGolden: true,
       goldenId: null
     };

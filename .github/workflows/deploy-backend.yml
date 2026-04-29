@@ -26,6 +26,13 @@ jobs:
       - name: Zip only the backend folder
         run: |
           cd backend
+          # Include legacy ingest CSV from repo root/data into backend package root
+          if [ -f ../data/sample-customers.csv ]; then
+            cp ../data/sample-customers.csv ./sample-customers.csv
+            echo "✅ Included sample-customers.csv for legacy /api/ingest"
+          else
+            echo "⚠️ data/sample-customers.csv not found in repo; legacy /api/ingest may fail"
+          fi
           zip -r ../deploy-package.zip . -x "node_modules/*" ".env" "*.log" "tests/*" ".git/*"
           echo "✅ Deployment package created"
 
