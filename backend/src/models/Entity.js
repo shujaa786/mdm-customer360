@@ -11,6 +11,7 @@ const EntitySchema = new mongoose.Schema({
   address: { type: String, trim: true, default: '' },
   sourceSystem: { type: String, trim: true, default: 'UNKNOWN', index: true },
   rawData: { type: mongoose.Schema.Types.Mixed, default: {} },
+  mergeLock: { type: String, default: null, index: true },
   isGolden: { type: Boolean, default: false, index: true },
   mergedFrom: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Entity' }]
 }, { timestamps: true });

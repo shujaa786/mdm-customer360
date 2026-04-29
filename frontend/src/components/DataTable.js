@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 export default function DataTable({ entities, refresh, loading }) {
   return (
@@ -29,7 +30,11 @@ export default function DataTable({ entities, refresh, loading }) {
           {entities.map((entity) => (
             <tr key={entity._id} className="hover:bg-slate-50">
               <td className="px-6 py-4 whitespace-nowrap text-slate-900">
-                <div className="font-medium">{entity.firstName} {entity.lastName}</div>
+                <div className="font-medium">
+                  <Link href={`/customer/${entity._id}`} className="text-blue-700 hover:underline">
+                    {entity.firstName} {entity.lastName}
+                  </Link>
+                </div>
                 {entity.isGolden && (
                   <span className="mt-1 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
                     GOLDEN

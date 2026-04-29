@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Entity = require('../models/Entity');
+const Relationship = require('../models/Relationship');
 const { createGoldenRecords } = require('../services/goldenRecordService');
 
 router.get('/', async (req, res) => {
@@ -40,6 +41,49 @@ router.get('/', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const entity = await Entity.findById(req.params.id).lean().exec();
+    if (!entity) {
+      return res.status(404).json({ success: false, error: 'Entity not found' });
+    }
+
+    const linkedFilter = entity.isGolden
+      ? {
+          $or: [
+            { _id: entity._id },
+            { _id: { $in: entity.mergedFrom || [] } },
+            { goldenId: entity._id }
+          ]
+        }
+      : {
+          $or: [
+            { _id: entity._id },
+            ...(entity.goldenId ? [{ goldenId: entity.goldenId }, { _id: entity.goldenId }] : [])
+          ]
+        };
+
+    const linkedRecords = await Entity.find(linkedFilter).lean().exec();
+
+    const relatedIds = linkedRecords.map((r) => r._id);
+    const relationships = await Relationship.find({
+      $or: [
+        { fromId: { $in: relatedIds } },
+        { toId: { $in: relatedIds } }
+      ]
+    }).lean().exec();
+
+    return res.json({
+      success: true,
+      entity,
+      linkedRecords,
+      relationships
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 

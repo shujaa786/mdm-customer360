@@ -26,6 +26,23 @@ function hasValue(str) {
   return normalize(str).length > 0;
 }
 
+function toEntityPreview(entity) {
+  const firstName = entity.firstName || entity.rawData?.first_name || '';
+  const lastName = entity.lastName || entity.rawData?.last_name || '';
+  const email = entity.email || entity.rawData?.email || '';
+  const phone = entity.phone || entity.rawData?.phone || '';
+
+  return {
+    _id: entity._id?.toString?.() || '',
+    firstName,
+    lastName,
+    email,
+    phone,
+    sourceSystem: entity.sourceSystem,
+    isGolden: entity.isGolden
+  };
+}
+
 // Main MDM matching function
 async function findPotentialMatches(Entity) {
   const allEntities = await Entity.find({ isGolden: false });
@@ -50,8 +67,8 @@ async function findPotentialMatches(Entity) {
 
       if (score >= 65) {
         matches.push({
-          entity1: a._id.toString(),
-          entity2: b._id.toString(),
+          entity1: toEntityPreview(a),
+          entity2: toEntityPreview(b),
           score: Math.round(score),
           reason: score > 80 ? 'Strong match (email/phone)' : 'Fuzzy name match'
         });

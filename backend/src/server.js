@@ -31,6 +31,7 @@ app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json());
 app.use('/api', require('./routes/ingest'));
 app.use('/api', require('./routes/match'));
+app.use('/api', require('./routes/relationships'));
 app.use('/api/entities', require('./routes/entities'));
 app.set('io', io);
 connectDB();

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import DataTable from '../components/DataTable';
 import { getApiBaseUrl } from '../lib/env';
+import socket from '../lib/socket';
 
 const apiBaseUrl = getApiBaseUrl();
 const RECORDS_PER_PAGE = 10;
@@ -50,6 +51,15 @@ export default function Home() {
 
   useEffect(() => {
     fetchEntities(1);
+  }, []);
+
+  useEffect(() => {
+    const onIngestComplete = () => {
+      fetchEntities(1);
+    };
+
+    socket.on('ingest-complete', onIngestComplete);
+    return () => socket.off('ingest-complete', onIngestComplete);
   }, []);
 
   return (
