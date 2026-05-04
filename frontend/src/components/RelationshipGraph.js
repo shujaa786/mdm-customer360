@@ -1,28 +1,49 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
-import ReactFlow from 'reactflow';
+import ReactFlow, { Controls, Background, MiniMap, useNodesState, useEdgesState, Handle, Position, MarkerType } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { getApiBaseUrl } from '../lib/env';
 
 const apiBaseUrl = getApiBaseUrl() || 'http://localhost:5000';
 
+const CustomNode = ({ data }) => (
+  <div
+    className={`px-3 py-2 rounded-lg border-2 shadow-md transition-all min-w-[120px] text-center ${
+      data.isGolden
+        ? 'bg-amber-100 border-amber-500 font-semibold'
+        : 'bg-blue-50 border-blue-300'
+    }`}
+    title={`${data.label}\nSystem: ${data.sourceSystem}`}
+  >
+    <Handle type="target" position={Position.Top} />
+    <div className="text-xs font-medium text-slate-900">{data.label}</div>
+    <div className="text-xs text-slate-600 mt-1">{data.sourceSystem}</div>
+    <Handle type="source" position={Position.Bottom} />
+  </div>
+);
+
+const nodeTypes = {
+  custom: CustomNode
+};
+
 export default function RelationshipGraph() {
-  const [entities, setEntities] = useState([]);
-  const [relationships, setRelationships] = useState([]);
+  const [rawNodes, setRawNodes] = useState([]);
+  const [rawEdges, setRawEdges] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   useEffect(() => {
     const fetchGraphData = async () => {
       setLoading(true);
       try {
-        const [entitiesRes, relRes] = await Promise.all([
-          axios.get(`${apiBaseUrl}/api/entities?limit=200`),
-          axios.get(`${apiBaseUrl}/api/relationships`)
-        ]);
-
-        setEntities(entitiesRes.data.entities || []);
-        setRelationships(relRes.data.relationships || []);
+        const res = await axios.get(`${apiBaseUrl}/api/graph`);
+        const data = res.data;
+        setRawNodes(data.nodes || []);
+        setRawEdges(data.edges || []);
+      } catch (err) {
+        console.error('Failed to fetch graph data:', err);
       } finally {
         setLoading(false);
       }
@@ -31,34 +52,78 @@ export default function RelationshipGraph() {
     fetchGraphData();
   }, []);
 
-  const nodes = useMemo(() => {
-    return entities.map((entity, index) => ({
-      id: String(entity._id),
-      data: { label: `${entity.firstName || ''} ${entity.lastName || ''}`.trim() || entity.email || 'Unknown' },
+  useEffect(() => {
+    const reactFlowNodes = rawNodes.map((node, index) => ({
+      id: node.id,
+      type: 'custom',
+      data: {
+        label: node.label,
+        isGolden: node.isGolden,
+        sourceSystem: node.sourceSystem
+      },
       position: {
-        x: 120 + (index % 5) * 220,
-        y: 80 + Math.floor(index / 5) * 140
-      }
+        x: 120 + (index % 8) * 220,
+        y: 80 + Math.floor(index / 8) * 200
+      },
+      draggable: true
     }));
-  }, [entities]);
+    setNodes(reactFlowNodes);
+  }, [rawNodes, setNodes]);
 
-  const edges = useMemo(() => {
-    const nodeIds = new Set(nodes.map((n) => n.id));
-
-    return relationships
-      .map((rel) => ({
-        id: String(rel._id),
-        source: String(rel.fromId),
-        target: String(rel.toId),
-        label: rel.type
-      }))
-      .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
-  }, [relationships, nodes]);
+  useEffect(() => {
+    const reactFlowEdges = rawEdges.map((edge) => {
+      let strokeColor = '#6b7280';
+      let strokeWidth = 2;
+      
+      if (edge.type === 'merged') {
+        strokeColor = '#10b981';
+        strokeWidth = 3;
+      } else if (edge.type === 'potential') {
+        strokeColor = '#f59e0b';
+        strokeWidth = 2;
+      }
+      
+      return {
+        id: edge.id,
+        source: edge.source.toString(),
+        target: edge.target.toString(),
+        label: `${edge.reason} (${edge.confidence}%)`,
+        animated: edge.style === 'solid',
+        markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor },
+        style: {
+          stroke: strokeColor,
+          strokeWidth: strokeWidth,
+          strokeDasharray: edge.style === 'dashed' ? '5,5' : 'none'
+        },
+        labelStyle: { fontSize: '9px', fontWeight: '600', fill: '#374151', background: '#ffffff', padding: '2px 4px', borderRadius: '2px' },
+        labelBgStyle: { fill: '#ffffff', stroke: '#d1d5db', strokeWidth: 0.5 }
+      };
+    });
+    setEdges(reactFlowEdges);
+  }, [rawEdges, setEdges]);
 
   return (
-    <div style={{ height: 500 }}>
-      {loading && <div className="mb-2 text-sm text-slate-500">Loading relationship graph...</div>}
-      <ReactFlow nodes={nodes} edges={edges} />
+    <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100">
+      {loading && (
+        <div className="absolute top-4 left-4 z-10 bg-white px-4 py-2 rounded-lg shadow-lg text-sm text-slate-600">
+          Loading relationship graph...
+        </div>
+      )}
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
+        fitView
+      >
+        <Background color="#e0e7ff" gap={16} />
+        <Controls />
+        <MiniMap
+          nodeColor={(node) => (node.data.isGolden ? '#fbbf24' : '#93c5fd')}
+          maskColor="rgba(0, 0, 0, 0.1)"
+        />
+      </ReactFlow>
     </div>
   );
 }

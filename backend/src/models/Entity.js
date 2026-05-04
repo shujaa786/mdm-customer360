@@ -16,6 +16,6 @@ const EntitySchema = new mongoose.Schema({
   mergedFrom: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Entity' }]
 }, { timestamps: true });
 
-EntitySchema.index({ sourceSystem: 1, sourceId: 1 }, { unique: true, sparse: true });
+EntitySchema.index({ sourceSystem: 1, sourceId: 1 });
 
 module.exports = mongoose.model('Entity', EntitySchema);

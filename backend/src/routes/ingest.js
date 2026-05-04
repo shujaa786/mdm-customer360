@@ -71,14 +71,14 @@ const writeEntities = async (entities, mode) => {
 const runIngestion = async ({ rows, mode, io, source }) => {
   const entities = rows.map(rowToEntity);
   const writtenCount = await writeEntities(entities, mode);
-  const goldenResult = await createGoldenRecords();
+  // Removed automatic golden record creation - now manual via /matches
 
   if (io) {
     io.emit('ingest-complete', {
       message: `Ingested ${rows.length} rows via ${source} (${mode})`,
       rowsReceived: rows.length,
       recordsWritten: writtenCount,
-      goldenCreated: goldenResult.goldenCount || 0,
+      goldenCreated: 0, // No auto-creation
       mode,
       source
     });
@@ -91,7 +91,7 @@ const runIngestion = async ({ rows, mode, io, source }) => {
     source,
     rowsReceived: rows.length,
     recordsWritten: writtenCount,
-    goldenCreated: goldenResult.goldenCount || 0
+    goldenCreated: 0
   };
 };
 

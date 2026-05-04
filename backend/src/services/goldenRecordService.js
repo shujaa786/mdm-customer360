@@ -1,5 +1,6 @@
 const Entity = require('../models/Entity');
 const { findPotentialMatches } = require('./matchingService');
+const Relationship = require('../models/Relationship');
 
 async function createGoldenRecordForPair(entity1Id, entity2Id) {
   const lockId = `${entity1Id}:${entity2Id}:${Date.now()}`;
@@ -48,10 +49,20 @@ async function createGoldenRecordForPair(entity1Id, entity2Id) {
 
   const goldenRecord = await Entity.create(goldenData);
 
+  goldenRecord.sourceId = goldenRecord._id.toString();
+  await goldenRecord.save();
+
   entity1.goldenId = goldenRecord._id;
   entity2.goldenId = goldenRecord._id;
   await entity1.save();
   await entity2.save();
+
+  // Create relationship between merged entities
+  // await Relationship.create({
+  //   fromId: entity1._id,
+  //   toId: entity2._id,
+  //   type: 'MATCH'
+  // });
 
   return {
     success: true,

@@ -18,6 +18,7 @@ export default function Home() {
     hasNextPage: false,
     hasPrevPage: false
   });
+  const [duplicates, setDuplicates] = useState(0);
 
   const fetchEntities = async (page = 1) => {
     setLoading(true);
@@ -37,6 +38,15 @@ export default function Home() {
     }
   };
 
+  const fetchDuplicates = async () => {
+    try {
+      const res = await axios.post(`${apiBaseUrl || 'http://localhost:5000'}/api/match`);
+      setDuplicates(res.data.matchCount || 0);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleNextPage = () => {
     if (pagination.hasNextPage) {
       fetchEntities(currentPage + 1);
@@ -51,11 +61,13 @@ export default function Home() {
 
   useEffect(() => {
     fetchEntities(1);
+    fetchDuplicates();
   }, []);
 
   useEffect(() => {
     const onIngestComplete = () => {
       fetchEntities(1);
+      fetchDuplicates();
     };
 
     socket.on('ingest-complete', onIngestComplete);
@@ -89,7 +101,7 @@ export default function Home() {
           </div>
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm text-gray-500">Duplicates Found</p>
-            <p className="mt-4 text-5xl font-bold text-amber-600">3</p>
+            <p className="mt-4 text-5xl font-bold text-amber-600">{duplicates}</p>
           </div>
         </div>
 

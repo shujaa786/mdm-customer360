@@ -45,7 +45,7 @@ function toEntityPreview(entity) {
 
 // Main MDM matching function
 async function findPotentialMatches(Entity) {
-  const allEntities = await Entity.find({ isGolden: false });
+  const allEntities = await Entity.find({ isGolden: false, goldenId: null });
   const matches = [];
 
   for (let i = 0; i < allEntities.length; i++) {

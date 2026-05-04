@@ -50,6 +50,40 @@ router.post('/match', async (req, res) => {
   }
 });
 
+router.get('/match', async (req, res) => {
+  try {
+    let matches = await findPotentialMatches(Entity);
+
+    // Backward-compatible normalization: if any service/deploy still returns ID-only matches,
+    // resolve IDs to preview objects so frontend always receives rich match cards.
+    if (matches.some(isIdOnlyMatch)) {
+      const ids = new Set();
+      for (const m of matches) {
+        if (typeof m.entity1 === 'string') ids.add(m.entity1);
+        if (typeof m.entity2 === 'string') ids.add(m.entity2);
+      }
+
+      const entities = await Entity.find({ _id: { $in: Array.from(ids) } }).lean().exec();
+      const byId = new Map(entities.map((e) => [e._id.toString(), toPreview(e)]));
+
+      matches = matches.map((m) => ({
+        ...m,
+        entity1: typeof m.entity1 === 'string' ? (byId.get(m.entity1) || { _id: m.entity1, firstName: '', lastName: '', email: '', phone: '', sourceSystem: '', isGolden: false }) : m.entity1,
+        entity2: typeof m.entity2 === 'string' ? (byId.get(m.entity2) || { _id: m.entity2, firstName: '', lastName: '', email: '', phone: '', sourceSystem: '', isGolden: false }) : m.entity2
+      }));
+    }
+
+    res.json({
+      success: true,
+      matchCount: matches.length,
+      matches: matches
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/merge', async (req, res) => {
   try {
     const { entity1Id, entity2Id } = req.body || {};
