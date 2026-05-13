@@ -1,11 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import DataTable from '../components/DataTable';
-import { getApiBaseUrl } from '../lib/env';
 import socket from '../lib/socket';
+import { apiClient } from '../lib/api/client';
+import { endpoints } from '../lib/api/endpoints';
 
-const apiBaseUrl = getApiBaseUrl();
 const RECORDS_PER_PAGE = 10;
 
 export default function Home() {
@@ -23,13 +22,12 @@ export default function Home() {
   const fetchEntities = async (page = 1) => {
     setLoading(true);
     try {
-      const res = await axios.get(
-        `${apiBaseUrl || 'http://localhost:5000'}/api/entities?page=${page}&limit=${RECORDS_PER_PAGE}`
+      const res = await apiClient.get(
+        `${endpoints.entities.list()}?page=${page}&limit=${RECORDS_PER_PAGE}`
       );
-      setEntities(res.data.entities || []);
-      setPagination(res.data.pagination || {});
+      setEntities(res.entities || []);
+      setPagination(res.pagination || {});
       setCurrentPage(page);
-      // Scroll to top for better UX
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error(err);
@@ -40,23 +38,19 @@ export default function Home() {
 
   const fetchDuplicates = async () => {
     try {
-      const res = await axios.post(`${apiBaseUrl || 'http://localhost:5000'}/api/match`);
-      setDuplicates(res.data.matchCount || 0);
+      const res = await apiClient.post(endpoints.match.match());
+      setDuplicates(res.matchCount || 0);
     } catch (err) {
       console.error(err);
     }
   };
 
   const handleNextPage = () => {
-    if (pagination.hasNextPage) {
-      fetchEntities(currentPage + 1);
-    }
+    if (pagination.hasNextPage) fetchEntities(currentPage + 1);
   };
 
   const handlePrevPage = () => {
-    if (pagination.hasPrevPage) {
-      fetchEntities(currentPage - 1);
-    }
+    if (pagination.hasPrevPage) fetchEntities(currentPage - 1);
   };
 
   useEffect(() => {
