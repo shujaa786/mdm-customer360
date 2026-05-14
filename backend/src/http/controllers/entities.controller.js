@@ -38,24 +38,48 @@ async function list(req, res) {
   });
 }
 
+async function search(req, res) {
+
+  const q = req.query.q || '';
+
+  const regex = new RegExp(q, 'i');
+
+  const entities = await Entity.find({
+    $or: [
+      { firstName: regex },
+      { lastName: regex },
+      { email: regex },
+      { phone: regex }
+    ]
+  })
+    .limit(50)
+    .sort({ createdAt: -1 })
+    .lean()
+    .exec();
+
+  return api.sendSuccess(res, {
+    entities
+  });
+}
+
 async function getById(req, res) {
   const entity = await Entity.findById(req.params.id).lean().exec();
   if (!entity) return api.sendNotFound(res, 'Entity not found');
 
   const linkedFilter = entity.isGolden
     ? {
-        $or: [
-          { _id: entity._id },
-          { _id: { $in: entity.mergedFrom || [] } },
-          { goldenId: entity._id }
-        ]
-      }
+      $or: [
+        { _id: entity._id },
+        { _id: { $in: entity.mergedFrom || [] } },
+        { goldenId: entity._id }
+      ]
+    }
     : {
-        $or: [
-          { _id: entity._id },
-          ...(entity.goldenId ? [{ goldenId: entity.goldenId }, { _id: entity.goldenId }] : [])
-        ]
-      };
+      $or: [
+        { _id: entity._id },
+        ...(entity.goldenId ? [{ goldenId: entity.goldenId }, { _id: entity.goldenId }] : [])
+      ]
+    };
 
   const linkedRecords = await Entity.find(linkedFilter).lean().exec();
 
@@ -77,6 +101,7 @@ async function createGolden(req, res) {
 
 module.exports = {
   list: asyncHandler(list),
+  search: asyncHandler(search),
   getById: asyncHandler(getById),
   createGolden: asyncHandler(createGolden)
 };

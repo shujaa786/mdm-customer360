@@ -1,5 +1,6 @@
 import './globals.css';
-import Navbar from '../components/Navbar';
+import AppShell from '../components/AppShell';
+import { AuthProvider } from '@/context/AuthContext';
 
 export const metadata = {
   title: 'MDM Customer 360 - Reltio Inspired',
@@ -10,8 +11,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="bg-gray-50 font-sans">
-        <Navbar />
-        {children}
+        <AuthProvider>
+          <AppShell>
+            {children}
+          </AppShell>
+        </AuthProvider>
       </body>
     </html>
   );

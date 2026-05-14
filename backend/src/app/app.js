@@ -16,6 +16,7 @@ function buildApp() {
   app.use(express.json());
 
   // Routes
+  app.use('/api/auth', require('../routes/auth.routes'));
   app.use('/api', require('../routes/ingest.routes'));
   app.use('/api', require('../routes/match.routes'));
   app.use('/api', require('../routes/relationships.routes'));

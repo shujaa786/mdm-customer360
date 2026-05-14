@@ -1,7 +1,13 @@
 import RelationshipGraph from '../../components/RelationshipGraph';
-
+import ProtectedRoute from '../../components/ProtectedRoute';
 export default function GraphPage() {
   return (
+     <ProtectedRoute
+    allowedRoles={[
+      'SUPER_ADMIN',
+      'DATA_STEWARD'
+    ]}
+  >
     <div className="flex flex-col h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm">
         <h1 className="text-3xl font-bold text-slate-900">Relationship Graph</h1>
@@ -11,5 +17,7 @@ export default function GraphPage() {
         <RelationshipGraph />
       </div>
     </div>
+  </ProtectedRoute>
+    
   );
 }

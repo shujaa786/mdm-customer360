@@ -1,107 +1,129 @@
 'use client';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import ReactFlow, { Controls, Background, MiniMap, useNodesState, useEdgesState, Handle, Position, MarkerType } from 'reactflow';
+import ReactFlow, {
+  Controls,
+  Background,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+  Handle,
+  Position,
+  MarkerType
+} from 'reactflow';
 import 'reactflow/dist/style.css';
-import { getApiBaseUrl } from '../lib/env';
-
-const apiBaseUrl = getApiBaseUrl() || 'http://localhost:5000';
-
+import { apiClient } from '../lib/api/client';
+import { endpoints } from '../lib/api/endpoints';
 const CustomNode = ({ data }) => (
   <div
-    className={`px-3 py-2 rounded-lg border-2 shadow-md transition-all min-w-[120px] text-center ${
-      data.isGolden
-        ? 'bg-amber-100 border-amber-500 font-semibold'
-        : 'bg-blue-50 border-blue-300'
-    }`}
+    className={`px-3 py-2 rounded-lg border-2 shadow-md transition-all min-w-[120px] text-center ${data.isGolden
+      ? 'bg-amber-100 border-amber-500 font-semibold'
+      : 'bg-blue-50 border-blue-300'
+      }`}
     title={`${data.label}\nSystem: ${data.sourceSystem}`}
   >
-    <Handle type="target" position={Position.Top} />
-    <div className="text-xs font-medium text-slate-900">{data.label}</div>
-    <div className="text-xs text-slate-600 mt-1">{data.sourceSystem}</div>
-    <Handle type="source" position={Position.Bottom} />
+    <Handle
+      type="target"
+      position={Position.Top}
+    />
+    <div className="text-xs font-medium text-slate-900">
+      {data.label}
+    </div>
+    <div className="text-xs text-slate-600 mt-1">
+      {data.sourceSystem}
+    </div>
+    <Handle
+      type="source"
+      position={Position.Bottom}
+    />
   </div>
 );
-
 const nodeTypes = {
   custom: CustomNode
 };
-
 export default function RelationshipGraph() {
   const [rawNodes, setRawNodes] = useState([]);
   const [rawEdges, setRawEdges] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
+  const [nodes, setNodes, onNodesChange] =
+    useNodesState([]);
+  const [edges, setEdges, onEdgesChange] =
+    useEdgesState([]);
   useEffect(() => {
     const fetchGraphData = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${apiBaseUrl}/api/graph`);
-        const data = res.data;
+        const data = await apiClient.get(
+          endpoints.relationships.graph()
+        );
         setRawNodes(data.nodes || []);
         setRawEdges(data.edges || []);
       } catch (err) {
-        console.error('Failed to fetch graph data:', err);
+        console.error(
+          'Failed to fetch graph data:',
+          err.message
+        );
       } finally {
         setLoading(false);
       }
     };
-
     fetchGraphData();
   }, []);
-
   useEffect(() => {
-    const reactFlowNodes = rawNodes.map((node, index) => ({
-      id: node.id,
-      type: 'custom',
-      data: {
-        label: node.label,
-        isGolden: node.isGolden,
-        sourceSystem: node.sourceSystem
-      },
-      position: {
-        x: 120 + (index % 8) * 220,
-        y: 80 + Math.floor(index / 8) * 200
-      },
-      draggable: true
-    }));
+    const reactFlowNodes = rawNodes.map(
+      (node, index) => ({
+        id: node.id,
+        type: 'custom',
+        data: {
+          label: node.label,
+          isGolden: node.isGolden,
+          sourceSystem: node.sourceSystem
+        },
+        position: {
+          x: 120 + (index % 8) * 220,
+          y: 80 + Math.floor(index / 8) * 200
+        },
+        draggable: true
+      })
+    );
     setNodes(reactFlowNodes);
   }, [rawNodes, setNodes]);
-
   useEffect(() => {
-    const reactFlowEdges = rawEdges.map((edge) => {
-      let strokeColor = '#6b7280';
-      let strokeWidth = 2;
-      
-      if (edge.type === 'merged') {
-        strokeColor = '#10b981';
-        strokeWidth = 3;
-      } else if (edge.type === 'potential') {
-        strokeColor = '#f59e0b';
-        strokeWidth = 2;
+    const reactFlowEdges = rawEdges.map(
+      (edge) => {
+        let strokeColor = '#6b7280';
+        let strokeWidth = 2;
+        if (edge.type === 'merged') {
+          strokeColor = '#10b981';
+          strokeWidth = 3;
+        } else if (
+          edge.type === 'potential'
+        ) {
+          strokeColor = '#f59e0b';
+          strokeWidth = 2;
+        }
+        return {
+          id: edge.id,
+          source: edge.source.toString(),
+          target: edge.target.toString(),
+          label: `${edge.reason} (${edge.confidence}%)`,
+          animated: edge.style === 'solid',
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: strokeColor
+          },
+          style: {
+            stroke: strokeColor,
+            strokeWidth,
+            strokeDasharray:
+              edge.style === 'dashed'
+                ? '5,5'
+                : 'none'
+          }
+        };
       }
-      
-      return {
-        id: edge.id,
-        source: edge.source.toString(),
-        target: edge.target.toString(),
-        label: `${edge.reason} (${edge.confidence}%)`,
-        animated: edge.style === 'solid',
-        markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor },
-        style: {
-          stroke: strokeColor,
-          strokeWidth: strokeWidth,
-          strokeDasharray: edge.style === 'dashed' ? '5,5' : 'none'
-        },
-        labelStyle: { fontSize: '9px', fontWeight: '600', fill: '#374151', background: '#ffffff', padding: '2px 4px', borderRadius: '2px' },
-        labelBgStyle: { fill: '#ffffff', stroke: '#d1d5db', strokeWidth: 0.5 }
-      };
-    });
+    );
     setEdges(reactFlowEdges);
   }, [rawEdges, setEdges]);
-
   return (
     <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100">
       {loading && (
@@ -117,11 +139,18 @@ export default function RelationshipGraph() {
         nodeTypes={nodeTypes}
         fitView
       >
-        <Background color="#e0e7ff" gap={16} />
+        <Background
+          color="#e0e7ff"
+          gap={16}
+        />
         <Controls />
         <MiniMap
-          nodeColor={(node) => (node.data.isGolden ? '#fbbf24' : '#93c5fd')}
-          maskColor="rgba(0, 0, 0, 0.1)"
+          nodeColor={(node) =>
+            node.data.isGolden
+              ? '#fbbf24'
+              : '#93c5fd'
+          }
+          maskColor="rgba(0,0,0,0.1)"
         />
       </ReactFlow>
     </div>
